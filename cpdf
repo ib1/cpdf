@@ -1,0 +1,41 @@
+#!/bin/bash
+combine ()
+{
+    pdfdir=$1 && shift
+    combined=$1 && shift
+    all=()
+    for f in "$@"
+    do
+        count=$(basename "$f" | grep -oiE '^[a-z]+-[0-9]+' | cut -d - -f 2)
+        for i in $(seq 1 $count)
+        do
+            all+=( "$f" )
+        done
+    done
+
+    echo "${all[@]}" | xargs /System/Library/Automator/Combine\ PDF\ Pages.action/Contents/Resources/join.py --output "$pdfdir/$combined"
+}
+
+# Test for valid directory
+if [[ ! -d "$1" ]]; then
+    echo "$1 is not a directory!"
+    exit
+fi
+
+# Make sure the output file has the ".pdf" extension
+outfile="$2"
+extension="${outfile##*.}"
+if [[ $extension != "pdf" ]]; then
+    outfile="$2.pdf"
+fi
+
+# Find all of the relevant pdfs, sort them, and add them to an array
+files=()
+while read line; do
+    files+=("$line")
+done <<< "$(find -E "$1" -iregex '.*/[a-z]+-[0-9]+-.*pdf$' -print0 | xargs -0 printf '"%s"\n' | sort)"
+
+# Combine if we found some files
+if [[ ${#files} -ne 0 ]]; then
+    combine "$1" "$outfile" "${files[@]}"
+fi
