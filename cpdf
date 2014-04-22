@@ -1,4 +1,5 @@
 #!/bin/bash
+#defines a function combine
 combine ()
 {
     pdfdir=$1 && shift
